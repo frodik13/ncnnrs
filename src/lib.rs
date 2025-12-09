@@ -32,56 +32,13 @@ pub fn version() -> &'static str {
     str_slice
 }
 
-pub fn get_gpu_count() -> i32 {
-    #[cfg(feature = "cpu")]
-    return 0;
-    #[cfg(not(feature = "cpu"))]
-    {
-        let res = unsafe { ncnn_bind::ncnn_get_gpu_count() };
-        res
-    }
-}
-
-pub fn destroy_gpu_instance() {
-    #[cfg(not(feature = "cpu"))]
-    unsafe {
-        ncnn_bind::ncnn_destroy_gpu_instance()
-    };
-}
 
 pub fn get_gpu_heap_budget(index: i32) -> u32 {
-    #[cfg(feature = "cpu")]
     return 0;
-    #[cfg(not(feature = "cpu"))]
-    {
-        let device = unsafe { ncnn_bind::ncnn_get_gpu_device(index) };
-        if device.is_null() {
-            return 0;
-        }
-        let res = unsafe { ncnn_bind::ncnn_VulkanDevice_get_heap_budget(device) };
-        res
-    }
 }
 
 pub fn get_device_name(index: i32) -> &'static str {
-    #[cfg(feature = "cpu")]
-    {
         return "cpu-only";
-    }
-    #[cfg(not(feature = "cpu"))]
-    {
-        let info = unsafe { ncnn_bind::ncnn_get_gpu_info(index) };
-        if info.is_null() {
-            return "unknown";
-        }
-        let res = unsafe { ncnn_bind::ncnn_GpuInfo_device_name(info) };
-        if res.is_null() {
-            return "unknown";
-        }
-        let c_str = unsafe { CStr::from_ptr(res) };
-        let str_slice: &str = c_str.to_str().unwrap_or("unknown");
-        str_slice
-    }
 }
 
 // 填充
@@ -99,7 +56,7 @@ pub fn copy_make_border(
     }
     let mut dst = crate::mat::Mat::new();
     unsafe {
-        ncnn_bind::ncnn_copy_make_border1(
+        ncnn_bind::ncnn_copy_make_border(
             src.ptr(),
             dst.ptr(),
             top,

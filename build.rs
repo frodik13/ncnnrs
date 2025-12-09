@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::fs;
 
 fn main() {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -16,19 +17,33 @@ fn main() {
 
     // println!("cargo:rerun-if-env-changed=NCNN_INCLUDE_DIR");
     let bindings = bindgen::Builder::default()
-        .header(format!("{}/gpu.h", ncnn_include_dir.display())) // 启用gpu相关的函数；# 对cpu模式，包含gpu.h头文件，所以不做处理
-        .header(format!("{}/c_api.h", ncnn_include_dir.display())) // 通用入口
-        // .clang_arg(format!("-I{}", ncnn_include_dir.display())) // 无效
+        // .header(format!("{}/gpu.h", ncnn_include_dir.display()))
+        .header(format!("{}/c_api.h", ncnn_include_dir.display()))
+        // .clang_arg(format!("-I{}", ncnn_include_dir.display())) 
         .clang_arg("-x")
         .clang_arg("c++")
         .allowlist_type("regex")
         .allowlist_function("ncnn.*")
         .allowlist_var("NCNN.*")
         .allowlist_type("ncnn.*")
+        // .manually_drop_union(".*")
         .generate()
         .expect("Unable to generate bindings");
 
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    // === ПАТЧИМ ФАЙЛ ===
+    let bindings_file = out_path.join("bindings.rs");
+    let content = fs::read_to_string(&bindings_file)
+        .expect("Failed to read bindings.rs");
+
+    let patched = content.replace(
+        "pub _M_val: _Tp,",
+        "pub _M_val: ::core::mem::ManuallyDrop<_Tp>,"
+    );
+
+    fs::write(&bindings_file, patched)
+        .expect("Failed to write patched bindings.rs");
 }
