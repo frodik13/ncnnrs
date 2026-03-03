@@ -432,6 +432,10 @@ impl Mat {
         unsafe { ncnn_mat_get_data(self.ptr) }
     }
 
+    pub fn channel(&self, c: i32) -> *mut ::std::os::raw::c_void {
+        unsafe { ncnn_mat_get_channel_data(self.ptr, c) }
+    }
+
     pub(crate) fn ptr(&self) -> ncnn_mat_t {
         self.ptr
     }
